@@ -1,0 +1,616 @@
+/* ==========================================================
+   THE OFFICE — Neo-Brutalist Components
+   Thick ink borders, hard offset shadows, zero radius,
+   tactile pressed buttons, and CRT agent terminal
+   ========================================================== */
+
+/* ── Cards ── */
+.card {
+  background: var(--white);
+  border: var(--border-main);
+  border-radius: var(--radius-none);
+  padding: var(--space-4);
+  box-shadow: var(--shadow-card);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+  position: relative;
+}
+
+.card:active {
+  transform: translate(2px, 2px);
+  box-shadow: var(--shadow-sm);
+}
+
+.card--elevated {
+  box-shadow: var(--shadow-xl);
+}
+
+.card__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: var(--space-2);
+}
+
+.card__icon {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-lg);
+  flex-shrink: 0;
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+.card__title {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: -0.02em;
+}
+
+.card__subtitle {
+  font-size: var(--font-size-xs);
+  color: var(--ink-dim);
+}
+
+/* ── Provider Cards (API Setup) ── */
+.provider-card {
+  background: var(--white);
+  border: var(--border-main);
+  padding: var(--space-3);
+  margin-bottom: var(--space-3);
+  box-shadow: var(--shadow-card-sm);
+  transition: all 0.15s ease;
+}
+
+.provider-card.connected {
+  border-color: var(--ink);
+  background: #FCFFF5;
+  box-shadow: 4px 4px 0 var(--status-working);
+}
+
+.provider-card.error {
+  border-color: var(--maroon);
+  box-shadow: 4px 4px 0 var(--maroon);
+}
+
+.provider-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.provider-card__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--font-weight-bold);
+  font-size: var(--font-size-base);
+  font-family: var(--font-family-mono);
+}
+
+/* ── Buttons (Tactile Neo-Brutalist) ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 8px 16px;
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-none);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: var(--shadow-btn);
+  cursor: pointer;
+  transition: all 0.08s ease;
+  user-select: none;
+  min-height: 40px;
+}
+
+.btn:hover {
+  background: var(--cream);
+}
+
+.btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.btn--primary, .btn-primary {
+  background: var(--yellow) !important;
+  color: var(--ink) !important;
+  border: 2px solid var(--ink) !important;
+  box-shadow: var(--shadow-btn) !important;
+}
+
+.btn--primary:hover, .btn-primary:hover {
+  background: var(--yellow-hover) !important;
+}
+
+.btn--secondary, .btn-secondary {
+  background: var(--cream-2) !important;
+  color: var(--ink) !important;
+  border: 2px solid var(--ink) !important;
+  box-shadow: var(--shadow-btn) !important;
+}
+
+.btn--outline, .btn-outline {
+  background: var(--white) !important;
+  border: 2px solid var(--ink) !important;
+  color: var(--ink) !important;
+  box-shadow: var(--shadow-btn) !important;
+}
+
+.btn--ghost, .btn-ghost {
+  background: transparent !important;
+  border: 2px solid transparent !important;
+  box-shadow: none !important;
+  color: var(--ink-dim) !important;
+}
+
+.btn--ghost:hover, .btn-ghost:hover {
+  border-color: var(--ink) !important;
+  background: var(--cream) !important;
+}
+
+.btn--danger, .btn-danger, .btn-error {
+  background: var(--maroon) !important;
+  color: var(--paper) !important;
+  border: 2px solid var(--ink) !important;
+  box-shadow: var(--shadow-btn) !important;
+}
+
+.btn--success, .btn-success {
+  background: var(--mint) !important;
+  color: var(--ink) !important;
+  border: 2px solid var(--ink) !important;
+  box-shadow: var(--shadow-btn) !important;
+}
+
+.btn--sm, .btn-sm {
+  padding: 4px 10px;
+  font-size: var(--font-size-xs);
+  min-height: 30px;
+}
+
+.btn--lg, .btn-large {
+  padding: 12px 20px;
+  font-size: var(--font-size-md);
+  min-height: 48px;
+}
+
+.btn--block, .btn-block {
+  width: 100%;
+}
+
+.btn--icon, .btn-icon {
+  padding: 6px;
+  min-height: 32px;
+  min-width: 32px;
+}
+
+/* ── Form Inputs ── */
+.input-group, .form-group {
+  margin-bottom: var(--space-3);
+}
+
+.input-group label, .form-group label {
+  display: block;
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.input, input[type="text"], input[type="password"], textarea, select {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius-none);
+  font-family: var(--font-family-mono);
+  font-size: var(--font-size-base);
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  box-sizing: border-box;
+  outline: none;
+}
+
+.input:focus, input[type="text"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
+  background: #FFFFF8;
+  border-color: var(--ink);
+  box-shadow: 3px 3px 0 var(--yellow);
+}
+
+/* ── Badges / Chips ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border: 1px solid var(--ink);
+  border-radius: var(--radius-none);
+  font-family: var(--font-family-mono);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 1px 1px 0 var(--ink);
+  white-space: nowrap;
+}
+
+.badge--executive { background: var(--peach); }
+.badge--management { background: var(--lilac); }
+.badge--engineering { background: var(--mint); }
+.badge--design { background: var(--sky-soft); }
+.badge--support { background: var(--rose); }
+
+.badge-primary { background: var(--yellow); color: var(--ink); }
+.badge-secondary { background: var(--cream-2); color: var(--ink); }
+.badge-success { background: var(--mint); color: var(--ink); }
+.badge-error { background: var(--rose); color: var(--maroon); }
+
+.badge--p0 { background: var(--rose); color: var(--maroon-deep); }
+.badge--p1 { background: var(--peach); }
+.badge--p2 { background: var(--yellow); }
+.badge--p3 { background: var(--cream); color: var(--ink-dim); }
+
+/* ── Avatar Circle / Square ── */
+.avatar {
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  border-radius: var(--radius-none);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-sm {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Neo-Brutalist Modal ── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(27, 27, 27, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--space-4);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.modal-overlay.visible {
+  opacity: 1;
+  display: flex !important;
+}
+
+.modal {
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-radius: var(--radius-none);
+  width: 100%;
+  max-width: 400px;
+  max-height: 85vh;
+  box-shadow: 8px 8px 0 var(--ink);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.modal__header {
+  background: var(--cream-2);
+  border-bottom: 2px solid var(--ink);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal__title, .modal__header h3 {
+  font-family: var(--font-family-display);
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.modal__close {
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+}
+
+.modal__close:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.modal__body {
+  padding: var(--space-4);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal__footer {
+  background: var(--cream);
+  border-top: 2px solid var(--ink);
+  padding: 10px 14px;
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+}
+
+/* ── CRT Agent Terminal Window ── */
+.crt-terminal {
+  background: var(--crt-bg);
+  border: 3px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  color: var(--crt-green);
+  font-family: var(--font-family-mono);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+}
+
+.crt-terminal__titlebar {
+  background: var(--ink-band);
+  border-bottom: 2px solid #333;
+  padding: 6px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #DDD;
+  font-size: 11px;
+}
+
+.crt-terminal__dots {
+  display: flex;
+  gap: 5px;
+}
+
+.crt-terminal__dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.crt-terminal__dot--red { background: #FF5F56; }
+.crt-terminal__dot--yellow { background: #FFBD2E; }
+.crt-terminal__dot--green { background: #27C93F; }
+
+.crt-terminal__screen {
+  background: var(--crt-screen);
+  padding: 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--crt-green);
+  overflow-y: auto;
+  max-height: 220px;
+  min-height: 140px;
+  position: relative;
+}
+
+.crt-terminal__screen::after {
+  content: " ";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+.crt-terminal__cursor {
+  display: inline-block;
+  width: 8px;
+  height: 14px;
+  background: var(--crt-green);
+  vertical-align: middle;
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+/* ── The Blackboard / Shared Hive ── */
+.blackboard-card {
+  background: #1B2921;
+  border: 3px solid #8B6F47; /* Chalkboard wood trim */
+  box-shadow: 4px 4px 0 var(--ink);
+  color: #FFFDF7;
+  padding: 12px;
+  font-family: var(--font-family-mono);
+}
+
+.blackboard-card__title {
+  color: var(--yellow);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border-bottom: 1px dashed rgba(255,255,255,0.3);
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+/* ── Command Center Bar (Ask Michael) ── */
+.command-center-bar {
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 6px 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.command-center-bar input {
+  flex: 1;
+  border: 2px solid var(--ink);
+  background: var(--white);
+  padding: 6px 10px;
+  font-size: 12px;
+  box-shadow: none;
+}
+
+/* ── Kanban Board & Task Cards ── */
+.kanban-board {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 15px;
+  scroll-snap-type: x mandatory;
+}
+
+.kanban-column {
+  flex: 0 0 260px;
+  background: var(--cream);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 8px;
+  scroll-snap-align: start;
+}
+
+.column-header {
+  border-bottom: 2px solid var(--ink);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.column-header h3 {
+  font-size: 12px;
+  font-family: var(--font-family-mono);
+  font-weight: 700;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.task-card {
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+
+.task-card:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+/* ── Toast Notifications ── */
+.toast-container {
+  position: fixed;
+  top: 15px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 380px;
+  z-index: var(--z-toast);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 10px 14px;
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.toast--success {
+  background: var(--mint);
+}
+
+.toast--error {
+  background: var(--rose);
+  color: var(--maroon);
+}
+
+.toast--warning {
+  background: var(--peach);
+}
+
+/* ── Tabs & Department Filters ── */
+.department-tabs, .tabs {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 4px 0 10px;
+}
+
+.tab-btn, .tab {
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  padding: 4px 10px;
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab-btn.active, .tab.active {
+  background: var(--yellow);
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink);
+}

@@ -1,0 +1,173 @@
+/* ==========================================================
+   THE OFFICE — Neo-Brutalist Warm-Paper Design System
+   ========================================================== */
+
+:root {
+  /* ── Canvas & Surfaces (Warm Paper) ── */
+  --paper: #FFFDF7;       /* Primary canvas / body */
+  --cream: #F5F2E8;       /* Primary section bands */
+  --cream-2: #F5ECD7;     /* Alt section bands / desks */
+  --white: #FFFFFF;       /* Cards & window bodies */
+  --ink-band: #1B1B1B;    /* Dark title bars & final CTA */
+
+  /* ── Ink (Text & Borders share the same ink) ── */
+  --ink: #1B1B1B;         /* Dark ink for text, borders, shadows */
+  --ink-dim: #57544C;     /* Secondary text, body paragraphs */
+  --ink-faint: #8A867A;   /* Captions, dotted paper grid, subtle meta */
+  --ink-inverse: #FFFDF7; /* White text on dark ink */
+
+  /* ── Accents ── */
+  --yellow: #FFCA54;      /* Primary CTA fill */
+  --yellow-hover: #EBB63C;
+  --sky: #72C2DF;         /* Highlighted phrases, links, alt CTA */
+  --sky-soft: #DCEFF7;
+  --maroon: #B23A4E;      /* Accent brand mark, supervisor/Michael badge */
+  --maroon-deep: #6E1423; /* Deep brand tone */
+
+  /* ── Pastel Feature Tints (Cards & departments) ── */
+  --lilac: #E4DEFB;       /* Management */
+  --peach: #FBDDBE;       /* Executive / Michael */
+  --mint: #D6F3E1;        /* Engineering */
+  --tan: #F1E6CC;         /* General / Paper */
+  --rose: #FBE0DF;        /* Support & QA */
+
+  /* ── CRT / Agent Terminal ── */
+  --crt-bg: #141414;
+  --crt-screen: #1A1A1A;
+  --crt-green: #4AF626;
+  --crt-amber: #FFB000;
+  --crt-cyan: #56D8FF;
+  --crt-dim: #888888;
+
+  /* ── Aliases for App Components ── */
+  --color-primary: var(--yellow);
+  --color-primary-dark: var(--yellow-hover);
+  --color-primary-light: #FFE399;
+  --color-primary-bg: #FFF8E6;
+
+  --color-dm-blue: var(--ink);
+  --color-dm-gold: var(--yellow);
+  --color-dm-paper: var(--paper);
+  --color-dm-brown: var(--maroon);
+
+  --color-bg: var(--paper);
+  --color-bg-dark: var(--cream);
+  --color-surface: var(--white);
+  --color-surface-alt: var(--cream);
+  --color-border: var(--ink);
+  --color-border-light: var(--ink);
+  --color-text: var(--ink);
+  --color-text-secondary: var(--ink-dim);
+  --color-text-muted: var(--ink-faint);
+  --color-text-inverse: var(--ink-inverse);
+
+  --color-success: #1E7E34;
+  --color-success-bg: var(--mint);
+  --color-warning: #D97706;
+  --color-warning-bg: var(--peach);
+  --color-error: var(--maroon);
+  --color-error-bg: var(--rose);
+  --color-info: #0284C7;
+  --color-info-bg: var(--sky-soft);
+
+  /* ── Employee Status ── */
+  --status-working: #1E7E34;
+  --status-meeting: var(--maroon);
+  --status-break: #D97706;
+  --status-idle: var(--ink-faint);
+  --status-blocked: #DC2626;
+
+  /* ── Department Colors ── */
+  --dept-executive: var(--peach);
+  --dept-management: var(--lilac);
+  --dept-engineering: var(--mint);
+  --dept-design: var(--sky-soft);
+  --dept-support: var(--rose);
+
+  /* ── Typography (Monospace-First) ── */
+  --font-family: 'JetBrains Mono', 'Consolas', 'SF Mono', 'Courier New', monospace;
+  --font-family-display: 'JetBrains Mono', 'Consolas', monospace;
+  --font-family-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+
+  --font-size-xs: 0.6875rem;   /* 11px */
+  --font-size-sm: 0.75rem;     /* 12px */
+  --font-size-base: 0.8125rem; /* 13px */
+  --font-size-md: 0.9375rem;   /* 15px */
+  --font-size-lg: 1.125rem;    /* 18px */
+  --font-size-xl: 1.375rem;    /* 22px */
+  --font-size-2xl: 1.75rem;    /* 28px */
+  --font-size-3xl: 2.25rem;    /* 36px */
+
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  --line-height-tight: 1.15;
+  --line-height-base: 1.45;
+  --line-height-relaxed: 1.6;
+
+  /* ── Spacing ── */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+
+  /* ── Neo-Brutalist Square Corners (Zero Radius) ── */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --radius-xl: 0px;
+  --radius-2xl: 0px;
+  --radius-full: 0px;
+
+  /* ── Hard Offset Shadows (No blur!) ── */
+  --shadow-card: 6px 6px 0 var(--ink);
+  --shadow-card-sm: 4px 4px 0 var(--ink);
+  --shadow-btn: 3px 3px 0 var(--ink);
+  --shadow-btn-pressed: 1px 1px 0 var(--ink);
+  --shadow-chip: 2px 2px 0 var(--ink);
+
+  --shadow-xs: 2px 2px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --shadow-md: 4px 4px 0 var(--ink);
+  --shadow-lg: 6px 6px 0 var(--ink);
+  --shadow-xl: 8px 8px 0 var(--ink);
+  --shadow-inner: inset 2px 2px 0 var(--ink);
+
+  /* ── Borders ── */
+  --border-width: 2px;
+  --border-bold-width: 3px;
+  --border-main: 2px solid var(--ink);
+  --border-bold: 3px solid var(--ink);
+
+  /* ── Z-Index Scale ── */
+  --z-floor: 1;
+  --z-furniture: 5;
+  --z-employees: 10;
+  --z-bubbles: 20;
+  --z-nav: 100;
+  --z-panel: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+  --z-loading: 500;
+
+  /* ── Layout Dimensions ── */
+  --nav-height: 56px;
+  --header-height: 52px;
+  --max-width: 440px;
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+
+  /* ── Office Floor Texture ── */
+  --floor-bg: var(--paper);
+  --floor-dots: var(--ink-faint);
+  --desk-color: var(--cream-2);
+  --wall-color: var(--cream);
+  --chair-color: var(--ink);
+}

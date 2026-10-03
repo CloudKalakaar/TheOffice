@@ -1,0 +1,465 @@
+/* ==========================================================
+   THE OFFICE — Living Floor World, Character Sprites & Agent UI
+   Neo-Brutalist Warm Paper, Roaming Sprites & Interactive Pipelines
+   ========================================================== */
+
+/* ── Active Project Ticker Strip (Office Screen) ── */
+.project-ticker-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  padding: 4px 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  font-weight: 700;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.project-ticker-strip:hover {
+  transform: translateY(-1px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.project-ticker-strip__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-ticker-strip__pulse {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--maroon);
+  border: 1px solid var(--ink);
+  animation: pulseTicker 1s infinite alternate;
+}
+
+@keyframes pulseTicker {
+  from { opacity: 0.4; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1.15); }
+}
+
+/* ── Living Floor Viewport ── */
+.office-world-wrapper {
+  position: relative;
+  width: 100%;
+  background: var(--paper);
+  background-image: radial-gradient(var(--ink-faint) 1px, transparent 1px);
+  background-size: 18px 18px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.office-world-stage {
+  position: relative;
+  width: 400px;
+  height: 480px;
+  transform-origin: top left;
+}
+
+/* ── Character Sprite Element ── */
+.world-character {
+  position: absolute;
+  width: 32px;
+  height: 38px;
+  cursor: pointer;
+  z-index: 20;
+  transition: transform 0.1s ease;
+  pointer-events: auto;
+}
+
+.world-character:hover {
+  z-index: 35;
+}
+
+.world-character__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.15s ease;
+}
+
+.world-character--facing-left .world-character__inner {
+  transform: scaleX(-1);
+}
+
+.world-character--facing-left .world-character__name,
+.world-character--facing-left .world-character__bubble,
+.world-character--facing-left .world-character__alert {
+  transform: scaleX(-1); /* keep text readable */
+}
+
+/* Shadow underneath character */
+.world-character__shadow {
+  position: absolute;
+  bottom: 0;
+  left: 6px;
+  width: 20px;
+  height: 6px;
+  background: rgba(27, 27, 27, 0.25);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* Character Head & Body */
+.world-character__head {
+  position: absolute;
+  top: 4px;
+  width: 16px;
+  height: 15px;
+  background: #FFDBAC;
+  border: 2px solid var(--ink);
+  box-shadow: 1px 1px 0 var(--ink);
+  z-index: 2;
+}
+
+.world-character__hair {
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  height: 6px;
+  background: #3B2F2F;
+  border-top: 2px solid var(--ink);
+}
+
+.world-character__body {
+  position: absolute;
+  top: 17px;
+  width: 22px;
+  height: 14px;
+  background: #4472C4;
+  border: 2px solid var(--ink);
+  box-shadow: 1px 1px 0 var(--ink);
+  z-index: 1;
+}
+
+/* Legs */
+.world-character__legs {
+  position: absolute;
+  bottom: 2px;
+  width: 16px;
+  height: 6px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 1px;
+}
+
+.world-character__leg {
+  width: 5px;
+  height: 6px;
+  background: var(--ink);
+}
+
+/* Character Animations */
+.world-character--walking .world-character__inner {
+  animation: characterBob 0.35s infinite alternate ease-in-out;
+}
+
+.world-character--walking .world-character__leg--left {
+  animation: legSwingLeft 0.35s infinite alternate ease-in-out;
+}
+
+.world-character--walking .world-character__leg--right {
+  animation: legSwingRight 0.35s infinite alternate ease-in-out;
+}
+
+@keyframes characterBob {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
+}
+
+@keyframes legSwingLeft {
+  0% { transform: rotate(-20deg) translateY(0); }
+  100% { transform: rotate(20deg) translateY(-2px); }
+}
+
+@keyframes legSwingRight {
+  0% { transform: rotate(20deg) translateY(-2px); }
+  100% { transform: rotate(-20deg) translateY(0); }
+}
+
+.world-character--typing .world-character__body {
+  animation: typingBounce 0.25s infinite alternate ease-in-out;
+}
+
+@keyframes typingBounce {
+  0% { transform: translateY(0) scaleY(1); }
+  100% { transform: translateY(1px) scaleY(0.95); }
+}
+
+/* Name Tag */
+.world-character__name {
+  position: absolute;
+  bottom: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  box-shadow: 1px 1px 0 var(--ink);
+  font-family: var(--font-family-mono);
+  font-size: 8px;
+  font-weight: 700;
+  padding: 0 3px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Alert Badge ("!" when agent needs boss attention) */
+.world-character__alert {
+  position: absolute;
+  top: -12px;
+  right: -4px;
+  width: 15px;
+  height: 15px;
+  background: var(--maroon);
+  color: var(--white);
+  border: 1px solid var(--ink);
+  box-shadow: 1px 1px 0 var(--ink);
+  border-radius: 50%;
+  font-family: var(--font-family-mono);
+  font-size: 10px;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: alertPulse 0.7s infinite alternate ease-in-out;
+  z-index: 15;
+}
+
+@keyframes alertPulse {
+  0% { transform: scale(0.9); }
+  100% { transform: scale(1.2); }
+}
+
+/* Status Dot */
+.world-character__status {
+  position: absolute;
+  top: 1px;
+  right: -2px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--ink);
+  z-index: 5;
+}
+
+.world-character__status--working { background: var(--crt-green); }
+.world-character__status--break { background: var(--yellow); }
+.world-character__status--meeting { background: var(--maroon); }
+.world-character__status--idle { background: var(--ink-faint); }
+
+/* World Speech Bubble */
+.world-bubble {
+  position: absolute;
+  top: -38px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-family: var(--font-family-mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 3px 6px;
+  white-space: nowrap;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 40;
+  pointer-events: none;
+  animation: bubblePop 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+}
+
+.world-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--ink);
+}
+
+@keyframes bubblePop {
+  0% { opacity: 0; transform: translateX(-50%) scale(0.7); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1); }
+}
+
+/* ── Talk Sheet Enhancements ── */
+.talk-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 250;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.talk-sheet-card {
+  width: 100%;
+  max-width: 460px;
+  background: var(--paper);
+  border: 3px solid var(--ink);
+  border-bottom: none;
+  box-shadow: 0 -4px 0 var(--ink);
+  padding: 14px 16px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  transform: translateY(100%);
+  transition: transform 0.25s cubic-bezier(0.1, 0.9, 0.2, 1);
+}
+
+.talk-chip {
+  background: var(--cream);
+  border: 1px solid var(--ink);
+  box-shadow: 1px 1px 0 var(--ink);
+  font-family: var(--font-family-mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.talk-chip:hover {
+  background: var(--yellow);
+  box-shadow: 2px 2px 0 var(--ink);
+}
+
+/* ── Projects Screen Styling ── */
+.projects-screen {
+  padding: 12px 14px 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.project-card {
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.project-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.project-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed var(--ink);
+  padding-bottom: 6px;
+}
+
+.phase-stepper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--cream);
+  border: 1px solid var(--ink);
+  padding: 6px 8px;
+  overflow-x: auto;
+}
+
+.phase-step {
+  font-family: var(--font-family-mono);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border: 1px solid var(--ink);
+  background: var(--white);
+  white-space: nowrap;
+}
+
+.phase-step--active {
+  background: var(--yellow);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.phase-step--done {
+  background: var(--mint);
+  text-decoration: line-through;
+}
+
+/* File Tabs in Project Explorer */
+.file-tabs .tab-btn {
+  background: var(--cream);
+  border: 1px solid var(--ink);
+  padding: 3px 8px;
+  font-family: var(--font-family-mono);
+  font-size: 10px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.1s ease;
+}
+
+.file-tabs .tab-btn:hover {
+  background: var(--cream-2);
+}
+
+.file-tabs .tab-btn.active {
+  background: var(--yellow);
+  font-weight: bold;
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+/* Live Sandboxed Preview Container */
+.preview-container {
+  width: 100%;
+  height: 380px;
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  background: var(--white);
+  overflow: hidden;
+  position: relative;
+}
+
+.preview-container iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  background: #FFFFFF;
+}
+
+/* Code Viewer */
+.code-viewer-container {
+  background: var(--crt-bg);
+  color: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 10px;
+  font-family: var(--font-family-mono);
+  font-size: 11px;
+  max-height: 280px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}

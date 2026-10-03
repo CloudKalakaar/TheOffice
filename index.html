@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1B1B1B">
+  <meta name="description" content="The Office - An AI-powered software company simulation game">
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="./manifest.json">
+  
+  <!-- iOS Safari Support -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="TheOffice">
+  <link rel="apple-touch-icon" href="./assets/icons/icon-192x192.png">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/jpeg" href="./assets/icons/logo.jpg">
+  
+  <title>The Office</title>
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="./css/variables.css">
+  <link rel="stylesheet" href="./css/reset.css">
+  <link rel="stylesheet" href="./css/layout.css">
+  <link rel="stylesheet" href="./css/office.css">
+  <link rel="stylesheet" href="./css/floor-world.css">
+  <link rel="stylesheet" href="./css/components.css">
+  <link rel="stylesheet" href="./css/animations.css">
+</head>
+<body>
+  <!-- Loading Screen -->
+  <div class="loading-screen" id="loading-screen">
+    <img src="./assets/icons/logo.jpg" alt="The Office" class="loading-logo">
+    <h1 class="loading-title">The Office</h1>
+    <p class="loading-subtitle">AI Software Company</p>
+    <div class="loading-spinner"></div>
+  </div>
+
+  <!-- App Root -->
+  <div id="app">
+    <!-- Header (injected by app.js) -->
+    <header class="app-header" id="app-header" style="display:none;">
+      <div class="app-header__title">
+        <img src="./assets/icons/logo.jpg" alt="" class="app-header__logo">
+        <span id="header-title">The Office</span>
+      </div>
+      <div class="app-header__actions">
+        <div class="time-display" id="time-display" style="font-family: var(--font-family-mono); font-size: 11px; font-weight: bold;">Day 1, 9:00 AM</div>
+        <div class="game-controls" id="game-controls">
+          <button class="game-controls__btn" data-speed="pause" title="Pause">⏸</button>
+          <button class="game-controls__btn active" data-speed="1" title="1x Speed">1x</button>
+          <button class="game-controls__btn" data-speed="2" title="2x Speed">2x</button>
+          <button class="game-controls__btn" data-speed="5" title="5x Speed">5x</button>
+        </div>
+        <button class="app-header__btn" id="btn-settings" title="Settings">⚙️</button>
+      </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="app-content" id="app-content">
+      <!-- Screens are rendered here by the router -->
+    </main>
+
+    <!-- Bottom Navigation (injected by component) -->
+    <nav class="bottom-nav" id="bottom-nav" style="display:none;"></nav>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Panel Backdrop -->
+  <div class="panel-backdrop" id="panel-backdrop"></div>
+
+  <!-- Slide Panel (employee detail, task detail, etc.) -->
+  <div class="slide-panel" id="slide-panel">
+    <div class="slide-panel__handle"></div>
+    <div class="slide-panel__header" id="panel-header"></div>
+    <div class="slide-panel__body" id="panel-body"></div>
+  </div>
+
+  <!-- Modal Container -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal" id="modal">
+      <div class="modal__header" id="modal-header"></div>
+      <div class="modal__body" id="modal-body"></div>
+      <div class="modal__footer" id="modal-footer"></div>
+    </div>
+  </div>
+
+  <!-- Standalone App Bundle (100% compatible with file://, localhost, and GitHub Pages) -->
+  <script src="./js/bundle.js"></script>
+  
+  <!-- Service Worker Registration (Runs on HTTPS & Localhost) -->
+  <script>
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => {
+            console.log('[App] SW registered:', reg.scope);
+            reg.addEventListener('updatefound', () => {
+              const newWorker = reg.installing;
+              newWorker.addEventListener('statechange', () => {
+                if (newWorker.state === 'activated' && navigator.serviceWorker.controller) {
+                  window.dispatchEvent(new CustomEvent('sw-update-available'));
+                }
+              });
+            });
+          })
+          .catch(err => console.warn('[App] SW registration warning:', err));
+
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data?.type === 'SW_UPDATED') {
+            window.dispatchEvent(new CustomEvent('sw-update-available', {
+              detail: { version: event.data.version }
+            }));
+          }
+        });
+      });
+    } else if (location.protocol === 'file:') {
+      console.log('[App] Running in direct local file mode (file://). Standalone bundle active.');
+    }
+  </script>
+</body>
+</html>

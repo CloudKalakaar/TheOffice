@@ -1,0 +1,267 @@
+/* ==========================================================
+   THE OFFICE — Office Floor & Pixel-Art Simulation
+   Warm-paper canvas, dotted grid, neo-brutalist rooms,
+   desks with CRT monitors, and the central Blackboard
+   ========================================================== */
+
+/* ── Office Container ── */
+.office-floor {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  background: var(--paper);
+  background-image: radial-gradient(var(--ink-faint) 1px, transparent 1px);
+  background-size: 20px 20px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.office-floor-container {
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  background: var(--paper);
+}
+
+/* ── Room Base ── */
+.room {
+  position: absolute;
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  border-radius: var(--radius-none);
+  overflow: visible;
+  transition: transform 0.1s ease;
+}
+
+.room__label {
+  position: absolute;
+  top: -12px;
+  left: 8px;
+  font-family: var(--font-family-mono);
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: var(--yellow);
+  padding: 1px 6px;
+  border: 1px solid var(--ink);
+  box-shadow: 1px 1px 0 var(--ink);
+  z-index: 4;
+}
+
+/* ── Room Types ── */
+.room--michael, .room--executive {
+  background: #FFF9F2;
+  border-color: var(--ink);
+}
+
+.room--michael .room__label {
+  background: var(--peach);
+}
+
+.room--blackboard {
+  background: #1B2921;
+  border: 2px solid #8B6F47;
+  color: #FFFDF7;
+}
+
+.room--blackboard .room__label {
+  background: #8B6F47;
+  color: #FFFDF7;
+}
+
+.room--meeting {
+  background: #F4FBFF;
+}
+
+.room--meeting .room__label {
+  background: var(--sky-soft);
+}
+
+.room--workspace {
+  background: #FAFAF7;
+}
+
+.room--workspace .room__label {
+  background: var(--cream-2);
+}
+
+.room--breakroom {
+  background: #FFFDF0;
+}
+
+.room--breakroom .room__label {
+  background: var(--tan);
+}
+
+.room--scrum {
+  background: #F5FFF8;
+}
+
+.room--scrum .room__label {
+  background: var(--mint);
+}
+
+/* ── Desks with CRT Monitors ── */
+.desk {
+  position: absolute;
+  width: 48px;
+  height: 28px;
+  background: var(--cream-2);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-furniture);
+}
+
+.desk__screen {
+  width: 16px;
+  height: 12px;
+  background: var(--crt-bg);
+  border: 1px solid var(--ink);
+  position: relative;
+}
+
+.desk__screen::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 4px;
+  height: 4px;
+  background: var(--crt-green);
+  box-shadow: 0 0 2px var(--crt-green);
+}
+
+/* ── Floor Avatars ── */
+.floor-avatar {
+  position: absolute;
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  z-index: var(--z-employees);
+  transition: left 0.4s ease, top 0.4s ease;
+}
+
+.floor-avatar__body {
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.floor-avatar__name {
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-family-mono);
+  font-size: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+  background: var(--paper);
+  border: 1px solid var(--ink);
+  padding: 0 3px;
+  box-shadow: 1px 1px 0 var(--ink);
+  pointer-events: none;
+}
+
+.floor-avatar__status {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--ink);
+}
+
+.floor-avatar__status--working { background: var(--crt-green); }
+.floor-avatar__status--break { background: var(--yellow); }
+.floor-avatar__status--meeting { background: var(--maroon); }
+.floor-avatar__status--idle { background: var(--ink-faint); }
+
+/* ── Speech Bubble ── */
+.speech-bubble {
+  position: absolute;
+  top: -36px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  font-family: var(--font-family-mono);
+  font-size: 9px;
+  font-weight: 600;
+  padding: 3px 6px;
+  white-space: nowrap;
+  z-index: var(--z-bubbles);
+  pointer-events: none;
+}
+
+.speech-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid var(--ink);
+}
+
+/* ── Activity / Typing Dots ── */
+.activity-dots {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  background: var(--yellow);
+  border: 1px solid var(--ink);
+  padding: 0 4px;
+  box-shadow: 1px 1px 0 var(--ink);
+  pointer-events: none;
+  animation: bounce 1s infinite alternate;
+}
+
+@keyframes bounce {
+  from { transform: translateX(-50%) translateY(0); }
+  to { transform: translateX(-50%) translateY(-3px); }
+}
+
+/* ── Mailbox Flying Envelope Animation ── */
+.flying-envelope {
+  position: absolute;
+  font-size: 14px;
+  z-index: 25;
+  pointer-events: none;
+  transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* ── Event Banner ── */
+.event-banner-container {
+  margin-bottom: 8px;
+}
+
+.event-banner {
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  font-family: var(--font-family-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
