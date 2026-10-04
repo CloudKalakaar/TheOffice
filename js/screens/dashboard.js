@@ -15,7 +15,7 @@ export class DashboardScreen {
     this.container.className = 'screen dashboard-screen layout-padded';
 
     const state = getState();
-    const company = state.company || { name: 'Dunder Mifflin Tech' };
+    const company = state.company || { name: 'The Office' };
     const employees = state.employees || [];
     const tasks = state.tasks || [];
     const game = state.game || { sprintNumber: 1, eventsLog: [], apiCalls: 0, tokensUsed: 0 };

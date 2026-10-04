@@ -24,6 +24,8 @@ import ChatScreen from './screens/chat.js';
 import TasksScreen from './screens/tasks.js';
 import DashboardScreen from './screens/dashboard.js';
 import ProjectsScreen from './screens/projects.js';
+import { ProjectOrchestrator } from './agents/orchestrator.js';
+import { ProjectArtifacts } from './agents/artifacts.js';
 
 // Lazy/direct screens
 let screens = {};
@@ -527,8 +529,12 @@ async function init() {
   }
 }
 
-// Expose navigate for global use
+// Expose navigate and core services for global use
 window.__navigate = navigate;
+window.ProjectOrchestrator = ProjectOrchestrator;
+window.ProjectArtifacts = ProjectArtifacts;
+window.getState = getState;
+window.setState = setState;
 
 // Boot the app safely (handles both loading and interactive/complete DOM states)
 if (document.readyState === 'loading') {

@@ -241,19 +241,24 @@ export class ProjectsScreen {
       const changeBox = createElement('div', {
         style: 'margin-top: 8px; border-top: 1px dashed var(--ink); padding-top: 8px;'
       });
+      const isCoding = proj.phase === 'coding' && proj.status === 'in_progress';
       changeBox.innerHTML = `
         <div style="font-family: var(--font-family-mono); font-size: 10px; font-weight: bold; margin-bottom: 4px;">REQUEST REVISIONS / CHANGES:</div>
         <div style="display: flex; gap: 6px;">
-          <input type="text" class="input-change" placeholder="e.g. 'Add dark mode toggle' or 'Add AWS RDS module'..." style="flex: 1; font-size: 11px; padding: 4px 8px;">
-          <button class="btn btn-secondary btn-sm btn-send-change" style="font-size: 10px;">SUBMIT TO DEV</button>
+          <input type="text" class="input-change" ${isCoding ? 'disabled' : ''} placeholder="${isCoding ? 'Team is updating code...' : "e.g. 'Add CSV export', 'Add region filter'..."}" style="flex: 1; font-size: 11px; padding: 4px 8px;">
+          <button class="btn btn-secondary btn-sm btn-send-change" ${isCoding ? 'disabled' : ''} style="font-size: 10px;">${isCoding ? 'DEV WORKING... ⏳' : 'SUBMIT TO DEV'}</button>
         </div>
       `;
 
       const sendChange = () => {
         const input = changeBox.querySelector('.input-change');
+        const submitBtn = changeBox.querySelector('.btn-send-change');
         const text = input.value.trim();
-        if (!text) return;
+        if (!text || isCoding) return;
         input.value = '';
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'DEV WORKING... ⏳';
+        input.disabled = true;
         ProjectOrchestrator.requestChanges(proj.id, text);
         Toast.show(`Revision dispatched to team!`, 'info');
       };

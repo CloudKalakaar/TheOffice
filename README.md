@@ -91,7 +91,7 @@ A mobile-first, vertical static Progressive Web App (PWA) that simulates a softw
 ## 🔑 Getting Started (In-Game Setup)
 
 1. **Launch App**: Open the app on your phone.
-2. **Company Name**: Set your company name (e.g. *Dunder Mifflin Tech*) and target software project.
+2. **Company Name**: Set your company name (e.g. *Acme Labs*) and target software project.
 3. **Connect AI**:
    - Enter an API key for any of the top providers (e.g. Gemini or Groq for free usage).
    - Click **Test Connection** to verify your key.

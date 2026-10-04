@@ -61,7 +61,7 @@ const AMBIENT_QUIPS = [
   "Code compiles! Pushing to staging 🚀",
   "That's what she said!",
   "PR approved, merging to main.",
-  "Dunder Mifflin tech runs on caffeine.",
+  "This office runs on caffeine.",
   "Sprint review is looking good.",
   "Checking the Jira tickets...",
   "Testing on production... kidding!"

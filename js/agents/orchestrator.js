@@ -15,6 +15,8 @@ import {
   buildCodePrompt, 
   buildQAPrompt, 
   buildFixPrompt, 
+  buildChangePrompt,
+  detectProjectType,
   buildDeliveryPrompt 
 } from '../ai/prompts.js';
 import { Task } from '../engine/task.js';
@@ -77,6 +79,7 @@ export class ProjectOrchestrator {
       id: projectId,
       name: options.name || ProjectOrchestrator.generateProjectTitle(cleanReq),
       requirement: cleanReq,
+      projectType: detectProjectType(cleanReq),
       status: 'in_progress', // 'in_progress', 'delivered', 'failed'
       phase: 'questions',    // 'questions', 'spec', 'planning', 'coding', 'qa', 'delivered'
       phaseProgress: 10,
@@ -141,36 +144,17 @@ export class ProjectOrchestrator {
     if (!project) return;
 
     const pm = ProjectOrchestrator.getEmployee(project.team.pmId) || ProjectOrchestrator.findAgentForRole('pm');
-    const company = getState('company') || { name: 'Dunder Mifflin Tech' };
+    const company = getState('company') || { name: 'The Office' };
+    const projectType = project.projectType || detectProjectType(project.requirement);
 
     try {
-      const messages = buildQuestionsPrompt(project.requirement, company.name);
+      const messages = buildQuestionsPrompt(project.requirement, company.name, projectType);
       const res = await AgentBrain.execute(pm, messages, { temperature: 0.7 });
       const parsed = AgentBrain.extractJSON(res.content, null);
 
       let questions = parsed?.questions || [];
       if (!Array.isArray(questions) || questions.length === 0) {
-        // Fallback default smart questions
-        questions = [
-          {
-            id: 'q1',
-            question: 'What is the visual theme and styling tone?',
-            options: ['Modern Neo-Brutalist (Office Warm Paper)', 'Dark Minimalist Cyber', 'Vibrant Retro Arcade'],
-            defaultOption: 'Modern Neo-Brutalist (Office Warm Paper)'
-          },
-          {
-            id: 'q2',
-            question: 'What is the primary interactive mechanic?',
-            options: ['Tap for random new items + sound/animations', 'Categorized filters + search', 'Interactive quiz / multi-step workflow'],
-            defaultOption: 'Tap for random new items + sound/animations'
-          },
-          {
-            id: 'q3',
-            question: 'Should it include local storage persistence?',
-            options: ['Yes, save favorites and user history', 'Keep it simple and stateless'],
-            defaultOption: 'Yes, save favorites and user history'
-          }
-        ];
+        questions = ProjectOrchestrator.defaultQuestions(projectType);
       }
 
       project.questions = questions;
@@ -203,22 +187,42 @@ export class ProjectOrchestrator {
 
     } catch (err) {
       console.warn('Phase questions failed, using defaults:', err);
-      // Fallback questions and continue
-      project.questions = [
-        {
-          id: 'q1',
-          question: 'What design aesthetic should the app adopt?',
-          options: ['Neo-Brutalist Warm Paper', 'Dark Clean Terminal', 'Playful Colorful'],
-          defaultOption: 'Neo-Brutalist Warm Paper'
-        }
-      ];
+      project.questions = ProjectOrchestrator.defaultQuestions(projectType);
       if (options.autopilot) {
-        ProjectOrchestrator.submitAnswers(projectId, { 'What design aesthetic should the app adopt?': 'Neo-Brutalist Warm Paper' });
+        const answers = {};
+        project.questions.forEach(q => { answers[q.question] = q.defaultOption || q.options[0]; });
+        ProjectOrchestrator.submitAnswers(projectId, answers);
       } else {
         ProjectOrchestrator.updateProject(project);
         emit('project-updated', project);
       }
     }
+  }
+
+  /**
+   * Type-aware fallback clarifying questions (used when no AI is available or parsing fails)
+   * @param {string} projectType
+   */
+  static defaultQuestions(projectType) {
+    if (projectType === 'python' || projectType === 'script') {
+      return [
+        { id: 'q1', question: 'How should the script authenticate / get credentials?', options: ['Default credential chain / environment variables', 'Named profile passed as a CLI argument', 'Explicit keys via config file'], defaultOption: 'Default credential chain / environment variables' },
+        { id: 'q2', question: 'What output format do you want?', options: ['Readable table in the terminal', 'JSON', 'CSV file'], defaultOption: 'Readable table in the terminal' },
+        { id: 'q3', question: 'What scope should it cover?', options: ['Single region/target passed as an argument', 'All regions/targets', 'Configurable list'], defaultOption: 'Single region/target passed as an argument' }
+      ];
+    }
+    if (projectType === 'terraform') {
+      return [
+        { id: 'q1', question: 'Which cloud provider?', options: ['AWS', 'Azure', 'GCP'], defaultOption: 'AWS' },
+        { id: 'q2', question: 'How should state be stored?', options: ['Local state (simple)', 'Remote backend (S3/GCS/Azure Blob)', 'Terraform Cloud'], defaultOption: 'Local state (simple)' },
+        { id: 'q3', question: 'Environment structure?', options: ['Single environment with variables', 'Separate dev/prod via tfvars', 'Reusable module + root'], defaultOption: 'Single environment with variables' }
+      ];
+    }
+    return [
+      { id: 'q1', question: 'What is the visual theme and styling tone?', options: ['Modern Neo-Brutalist (Warm Paper)', 'Dark Minimalist', 'Vibrant Retro Arcade'], defaultOption: 'Modern Neo-Brutalist (Warm Paper)' },
+      { id: 'q2', question: 'What is the primary interaction?', options: ['Tap for random new items + animations', 'Categorized filters + search', 'Multi-step workflow'], defaultOption: 'Tap for random new items + animations' },
+      { id: 'q3', question: 'Should it include local storage persistence?', options: ['Yes, save favorites and history', 'Keep it simple and stateless'], defaultOption: 'Yes, save favorites and history' }
+    ];
   }
 
   /**
@@ -235,7 +239,7 @@ export class ProjectOrchestrator {
     const pm = ProjectOrchestrator.getEmployee(project.team.pmId) || ProjectOrchestrator.findAgentForRole('pm');
     if (pm) {
       ProjectOrchestrator.setEmployeeAlert(pm.id, false);
-      ProjectOrchestrator.updateEmployeeStatus(pm.id, 'working', `Drafting technical spec for "${project.name}"`);
+      ProjectOrchestrator.updateEmployeeStatus(pm.id, 'working', `Drafting technical spec for \"${project.name}\"`);
     }
 
     project.timeline.push({
@@ -251,8 +255,32 @@ export class ProjectOrchestrator {
     // Run the remaining pipeline asynchronously
     ProjectOrchestrator.runEngineeringPipeline(projectId).catch(err => {
       console.error('Pipeline error:', err);
-      Toast.show(`Build pipeline error: ${err.message}`, 'error');
+      ProjectOrchestrator.markFailed(projectId, `Build failed: ${err.message}`);
     });
+  }
+
+  /**
+   * Mark a project as failed (or back to delivered if it already has files) so it never stays stuck mid-phase
+   */
+  static markFailed(projectId, reason) {
+    const project = ProjectOrchestrator.getProject(projectId);
+    if (!project) return;
+    const hasFiles = Object.keys(project.files || {}).length > 0;
+    project.status = hasFiles ? 'delivered' : 'failed';
+    project.phase = hasFiles ? 'delivered' : 'failed';
+    project.phaseProgress = hasFiles ? 100 : 0;
+    project.timeline.push({
+      timestamp: Date.now(),
+      authorName: 'System',
+      authorRole: 'Orchestrator',
+      message: `⚠️ ${reason}`
+    });
+    Object.values(project.team || {}).forEach(id => {
+      if (id) ProjectOrchestrator.updateEmployeeStatus(id, 'idle', null);
+    });
+    ProjectOrchestrator.updateProject(project);
+    emit('project-updated', project);
+    Toast.show(reason, 'error', 6000);
   }
 
   /**
@@ -262,12 +290,14 @@ export class ProjectOrchestrator {
     let project = ProjectOrchestrator.getProject(projectId);
     if (!project) return;
 
-    const company = getState('company') || { name: 'Dunder Mifflin Tech' };
+    const company = getState('company') || { name: 'The Office' };
     const pm = ProjectOrchestrator.getEmployee(project.team.pmId) || ProjectOrchestrator.findAgentForRole('pm');
     const techLead = ProjectOrchestrator.getEmployee(project.team.techLeadId) || ProjectOrchestrator.findAgentForRole('tech_lead');
     const dev = ProjectOrchestrator.getEmployee(project.team.devId) || ProjectOrchestrator.findAgentForRole('dev');
     const qa = ProjectOrchestrator.getEmployee(project.team.qaId) || ProjectOrchestrator.findAgentForRole('qa');
     const ceo = ProjectOrchestrator.getEmployee(project.team.ceoId) || ProjectOrchestrator.findAgentForRole('ceo');
+    const projectType = project.projectType || detectProjectType(project.requirement);
+    project.projectType = projectType;
 
     // ── STEP 1: SPEC ──
     try {
@@ -275,7 +305,7 @@ export class ProjectOrchestrator {
       project.phaseProgress = 30;
       ProjectOrchestrator.updateProject(project);
 
-      const specMessages = buildSpecPrompt(project.requirement, project.answers, company.name);
+      const specMessages = buildSpecPrompt(project.requirement, project.answers, company.name, projectType);
       const specRes = await AgentBrain.execute(pm, specMessages, { temperature: 0.6 });
       project.spec = specRes.content;
       project.timeline.push({
@@ -292,7 +322,7 @@ export class ProjectOrchestrator {
       ProjectOrchestrator.updateProject(project);
       emit('project-updated', project);
     } catch (e) {
-      project.spec = `App: ${project.name}\nRequirement: ${project.requirement}\nGoal: A single-file interactive standalone application.`;
+      project.spec = `Deliverable: ${project.name}\nRequirement: ${project.requirement}\nType: ${projectType}`;
     }
 
     // ── STEP 2: TECH PLAN & TASKS ──
@@ -306,13 +336,14 @@ export class ProjectOrchestrator {
       ProjectOrchestrator.updateProject(project);
       emit('project-updated', project);
 
-      const planMessages = buildPlanPrompt(project.spec, company.name);
+      const planMessages = buildPlanPrompt(project.spec, company.name, project.requirement, projectType);
       const planRes = await AgentBrain.execute(techLead, planMessages, { temperature: 0.5 });
       const planData = AgentBrain.extractJSON(planRes.content, {
-        architectureSummary: 'Single-file reactive HTML5 application.',
-        files: [{ name: 'index.html', role: 'Full application' }],
-        tasks: [{ title: 'Implement application UI and logic', assigneeRole: 'developer' }]
+        architectureSummary: `Planned ${projectType} deliverable.`,
+        files: ProjectOrchestrator.defaultFilesFor(projectType),
+        tasks: [{ title: 'Implement deliverable', assigneeRole: 'developer' }]
       });
+      planData.files = ProjectOrchestrator.validatePlanFiles(planData.files, projectType);
 
       project.plan = planData;
       project.timeline.push({
@@ -347,8 +378,9 @@ export class ProjectOrchestrator {
       emit('project-updated', project);
     } catch (e) {
       project.plan = {
-        architectureSummary: 'Single-file interactive HTML5 application.',
-        files: [{ name: 'index.html', role: 'Application bundle' }]
+        architectureSummary: `Planned ${projectType} deliverable.`,
+        projectType,
+        files: ProjectOrchestrator.defaultFilesFor(projectType)
       };
     }
 
@@ -364,21 +396,27 @@ export class ProjectOrchestrator {
 
     const filesToBuild = (project.plan?.files && project.plan.files.length > 0)
       ? project.plan.files
-      : [{ name: 'index.html', description: 'Complete web application' }];
+      : ProjectOrchestrator.defaultFilesFor(projectType);
 
     const builtFiles = {};
+    let offlineMode = false;
     for (let i = 0; i < filesToBuild.length; i++) {
       const fileInfo = filesToBuild[i];
       const fileName = fileInfo.name || 'index.html';
 
+      // Offline templates produce the whole deliverable in one go — skip remaining planned files
+      if (offlineMode) break;
+
       let codeRes = null;
       try {
-        const codeMessages = buildCodePrompt(fileName, fileInfo.description, project.spec, project.plan, builtFiles);
-        codeRes = await AgentBrain.execute(dev, codeMessages, { temperature: 0.7, maxTokens: 4096 });
+        const codeMessages = buildCodePrompt(fileName, fileInfo.description, project.spec, project.plan, builtFiles, project.requirement);
+        codeRes = await AgentBrain.execute(dev, codeMessages, { temperature: 0.4, maxTokens: 8192 });
       } catch (err) {
         if (err.message === 'NO_PROVIDER_CONNECTED' || err.message?.includes('No AI provider') || err.message?.includes('PROVIDER')) {
-          Toast.show('No AI key connected. Generated starter application template!', 'info');
-          codeRes = { content: ProjectOrchestrator.generateOfflineApp(project, fileName) };
+          Toast.show('No working AI key — delivered an offline starter template instead of custom code.', 'info', 6000);
+          offlineMode = true;
+          const primary = ProjectOrchestrator.defaultFilesFor(projectType)[0].name;
+          codeRes = { content: ProjectOrchestrator.generateOfflineApp(project, primary) };
         } else {
           throw err;
         }
@@ -496,6 +534,9 @@ export class ProjectOrchestrator {
     const project = ProjectOrchestrator.getProject(projectId);
     if (!project) return;
 
+    const cleanDirective = (changeDirective || '').trim();
+    if (!cleanDirective) return;
+
     project.status = 'in_progress';
     project.phase = 'coding';
     project.phaseProgress = 70;
@@ -503,7 +544,7 @@ export class ProjectOrchestrator {
       timestamp: Date.now(),
       authorName: 'Boss (You)',
       authorRole: 'Executive',
-      message: `Requested changes: "${changeDirective}". Team updating code.`
+      message: `Requested changes: "${cleanDirective}". Team updating code.`
     });
 
     ProjectOrchestrator.updateProject(project);
@@ -515,32 +556,179 @@ export class ProjectOrchestrator {
       emit('agent-say', { empId: dev.id, text: `Updating code with boss's changes! 💻` });
     }
 
-    const mainFile = project.files['index.html'] ? 'index.html' : Object.keys(project.files)[0];
-    const currentCode = project.files[mainFile] || '';
+    try {
+      let codeRes = null;
+      try {
+        const changeMessages = buildChangePrompt(project.requirement, project.files, cleanDirective);
+        codeRes = await AgentBrain.execute(dev, changeMessages, { temperature: 0.4, maxTokens: 8192 });
+      } catch (err) {
+        if (err.message === 'NO_PROVIDER_CONNECTED' || err.message?.includes('No AI provider') || err.message?.includes('PROVIDER')) {
+          Toast.show('No active AI key — applying local code revisions.', 'info');
+          codeRes = { content: ProjectOrchestrator.applyOfflineChanges(project, cleanDirective) };
+        } else {
+          throw err;
+        }
+      }
 
-    const fixMessages = buildFixPrompt(mainFile, currentCode, [
-      { severity: 'feature', issue: `Boss requested modifications: "${changeDirective}"`, fix: 'Incorporate these modifications completely.' }
-    ]);
+      if (codeRes && codeRes.content) {
+        const updatedFiles = AgentBrain.extractFiles(codeRes.content);
+        if (Object.keys(updatedFiles).length > 0) {
+          project.files = Object.assign({}, project.files, updatedFiles);
+        } else {
+          const primaryFile = Object.keys(project.files)[0] || 'main.py';
+          project.files[primaryFile] = codeRes.content;
+        }
+      }
 
-    const res = await AgentBrain.execute(dev, fixMessages, { temperature: 0.6 });
-    const updated = AgentBrain.extractFiles(res.content, mainFile);
-    if (updated[mainFile]) {
-      project.files[mainFile] = updated[mainFile];
+      project.phase = 'delivered';
+      project.phaseProgress = 100;
+      project.status = 'delivered';
+      project.timeline.push({
+        timestamp: Date.now(),
+        authorName: dev?.name || 'Developer',
+        authorRole: 'Developer',
+        message: `Changes incorporated and validated.`
+      });
+
+      if (dev) ProjectOrchestrator.updateEmployeeStatus(dev.id, 'idle', null);
+
+      ProjectOrchestrator.updateProject(project);
+      emit('project-updated', project);
+      Toast.show(`Changes applied to "${project.name}"!`, 'success');
+
+    } catch (err) {
+      console.error('Error applying revision:', err);
+      // Reset safely to delivered state so the project is NEVER stuck in coding
+      project.phase = 'delivered';
+      project.phaseProgress = 100;
+      project.status = 'delivered';
+      project.timeline.push({
+        timestamp: Date.now(),
+        authorName: 'System',
+        authorRole: 'Orchestrator',
+        message: `⚠️ Could not apply change: ${err.message}`
+      });
+      if (dev) ProjectOrchestrator.updateEmployeeStatus(dev.id, 'idle', null);
+      ProjectOrchestrator.updateProject(project);
+      emit('project-updated', project);
+      Toast.show(`Revision failed: ${err.message}`, 'error', 6000);
+    }
+  }
+
+  /**
+   * Apply code modifications offline when no external AI provider is configured
+   */
+  static applyOfflineChanges(project, changeDirective) {
+    const files = project.files || {};
+    const directive = (changeDirective || '').toLowerCase();
+    const fileNames = Object.keys(files);
+    const primaryName = fileNames.find(f => f.endsWith('.py') || f.endsWith('.tf') || f.endsWith('.html')) || fileNames[0] || 'main.py';
+    let code = files[primaryName] || '';
+
+    // If it's an AWS EC2 python script
+    if (primaryName.endsWith('.py') && (code.includes('ec2') || code.includes('boto3'))) {
+      if (directive.includes('csv') || directive.includes('export')) {
+        if (!code.includes('csv.DictWriter')) {
+          code = code.replace('import json', 'import json\nimport csv');
+          code = code.replace('if args.json:', `if args.csv:\n        with open(args.csv, 'w', newline='', encoding='utf-8') as f:\n            writer = csv.DictWriter(f, fieldnames=["InstanceId", "Name", "InstanceType", "Region", "AvailabilityZone", "PrivateIpAddress", "PublicIpAddress", "State", "LaunchTime"])\n            writer.writeheader()\n            writer.writerows(all_instances)\n        print(f"[SUCCESS] Exported {len(all_instances)} instances to {args.csv}")\n    elif args.json:`);
+          code = code.replace('parser.add_argument("--json"', 'parser.add_argument("--csv", help="Export running instances to a CSV file path.")\n    parser.add_argument("--json"');
+        }
+      } else if (directive.includes('stop')) {
+        if (!code.includes('stop_instances')) {
+          code = code + `\n\ndef stop_instances_by_id(instance_ids: List[str], region: str, session: boto3.Session):\n    """Safely stop specified EC2 instances."""\n    ec2 = session.client('ec2', region_name=region)\n    print(f"[WARN] Stopping instances: {instance_ids}")\n    return ec2.stop_instances(InstanceIds=instance_ids)\n`;
+        }
+      } else {
+        code = `# [REVISION APPLIED: ${changeDirective}]\n` + code;
+      }
+      return `=== FILE: ${primaryName} ===\n${code}\n=== END FILE ===`;
     }
 
-    project.phase = 'delivered';
-    project.phaseProgress = 100;
-    project.status = 'delivered';
-    project.timeline.push({
-      timestamp: Date.now(),
-      authorName: dev?.name || 'Developer',
-      authorRole: 'Developer',
-      message: `Changes incorporated and validated.`
+    if (primaryName.endsWith('.py') || primaryName.endsWith('.tf')) {
+      code = `# [REVISION APPLIED: ${changeDirective}]\n` + code;
+      return `=== FILE: ${primaryName} ===\n${code}\n=== END FILE ===`;
+    }
+
+    if (code.includes('</body>')) {
+      code = code.replace('</body>', `  <!-- Revision: ${changeDirective} -->\n</body>`);
+    } else {
+      code = code + `\n<!-- Revision: ${changeDirective} -->`;
+    }
+    return `=== FILE: ${primaryName} ===\n${code}\n=== END FILE ===`;
+  }
+
+  /**
+   * Default file structure per project type
+   */
+  static defaultFilesFor(projectType, requirement = '') {
+    const req = (requirement || '').toLowerCase();
+    if (projectType === 'python') {
+      if (req.includes('ec2') || req.includes('aws') || req.includes('instance')) {
+        return [
+          { name: 'list_ec2_instances.py', description: 'Python script to fetch and display running AWS EC2 instances via boto3' },
+          { name: 'requirements.txt', description: 'Dependencies (boto3)' },
+          { name: 'README.md', description: 'Instructions for AWS credentials and script execution' }
+        ];
+      }
+      return [
+        { name: 'main.py', description: 'Executable Python 3 script' },
+        { name: 'requirements.txt', description: 'Python dependencies' },
+        { name: 'README.md', description: 'Execution and setup guide' }
+      ];
+    }
+    if (projectType === 'terraform') {
+      return [
+        { name: 'main.tf', description: 'Terraform resources and providers' },
+        { name: 'variables.tf', description: 'Terraform input variables' },
+        { name: 'outputs.tf', description: 'Outputs and endpoints' },
+        { name: 'README.md', description: 'Terraform deployment instructions' }
+      ];
+    }
+    if (projectType === 'script') {
+      return [
+        { name: 'script.sh', description: 'Executable shell automation script' },
+        { name: 'README.md', description: 'Usage guide' }
+      ];
+    }
+    if (projectType === 'fullstack_pyodide') {
+      return [
+        { name: 'index.html', description: 'Web UI with in-browser Pyodide Python runtime' },
+        { name: 'app.py', description: 'Python logic executed by Pyodide' }
+      ];
+    }
+    return [
+      { name: 'index.html', description: 'Standalone interactive web application' }
+    ];
+  }
+
+  /**
+   * Validate and sanitize planned files against the detected project type
+   */
+  static validatePlanFiles(files, projectType) {
+    if (!Array.isArray(files) || files.length === 0) {
+      return ProjectOrchestrator.defaultFilesFor(projectType);
+    }
+    let sanitized = files.map(f => {
+      if (typeof f === 'string') return { name: f, description: f };
+      return { name: f.name || 'file', description: f.description || '' };
     });
 
-    ProjectOrchestrator.updateProject(project);
-    emit('project-updated', project);
-    Toast.show(`Changes applied to "${project.name}"!`, 'success');
+    if (projectType === 'python' || projectType === 'script') {
+      // Remove index.html if LLM mistakenly planned it for a pure python/script requirement
+      sanitized = sanitized.filter(f => !f.name.endsWith('.html'));
+      if (!sanitized.some(f => f.name.endsWith('.py') || f.name.endsWith('.sh'))) {
+        sanitized.unshift({ name: 'main.py', description: 'Main Python script' });
+      }
+    } else if (projectType === 'terraform') {
+      sanitized = sanitized.filter(f => !f.name.endsWith('.html'));
+      if (!sanitized.some(f => f.name.endsWith('.tf'))) {
+        sanitized.unshift({ name: 'main.tf', description: 'Main Terraform configuration' });
+      }
+    } else if (projectType === 'web') {
+      if (!sanitized.some(f => f.name.endsWith('.html'))) {
+        sanitized.unshift({ name: 'index.html', description: 'Main application HTML' });
+      }
+    }
+    return sanitized;
   }
 
   // Helper utilities
@@ -615,9 +803,35 @@ export class ProjectOrchestrator {
   }
 
   static generateProjectTitle(req) {
-    const words = req.replace(/[^\w\s]/g, '').split(/\s+/).filter(Boolean);
-    if (words.length <= 4) return words.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    return words.slice(0, 3).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') + ' App';
+    if (!req) return 'New Project';
+    const clean = req.trim().replace(/[^\w\s\-]/g, '');
+    const rLower = clean.toLowerCase();
+
+    // Domain matches
+    if (rLower.includes('ec2') && (rLower.includes('fetch') || rLower.includes('list') || rLower.includes('get') || rLower.includes('running'))) {
+      return 'AWS EC2 Instance Fetcher';
+    }
+    if (rLower.includes('terraform') || (rLower.includes('aws') && rLower.includes('infra'))) {
+      return 'AWS Cloud Infrastructure';
+    }
+    if (rLower.includes('joke')) {
+      return 'Dad Joke Web App';
+    }
+
+    // Strip generic command words
+    const stopWords = new Set(['create', 'build', 'make', 'generate', 'write', 'develop', 'setup', 'a', 'an', 'the', 'to', 'for', 'some', 'please', 'script', 'app']);
+    const words = clean.split(/\s+/).filter(Boolean);
+    const meaningful = words.filter(w => !stopWords.has(w.toLowerCase()));
+
+    if (meaningful.length > 0) {
+      const titleWords = meaningful.slice(0, 4).map(w => w.charAt(0).toUpperCase() + w.slice(1));
+      const isScript = rLower.includes('script') || rLower.includes('python');
+      const suffix = isScript ? 'Script' : (rLower.includes('infra') || rLower.includes('terraform') ? 'Infra' : 'App');
+      const base = titleWords.join(' ');
+      return base.toLowerCase().includes(suffix.toLowerCase()) ? base : `${base} ${suffix}`;
+    }
+
+    return words.slice(0, 4).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
   }
 
   static generateOfflineApp(project, fileName = 'index.html') {
@@ -729,6 +943,214 @@ output "security_group_id" {
     }
 
     if (isPython) {
+      if (req.includes('ec2') || (req.includes('aws') && req.includes('instance')) || req.includes('boto3')) {
+        return `=== FILE: list_ec2_instances.py ===
+#!/usr/bin/env python3
+"""
+AWS EC2 Running Instances Fetcher
+Fetches and displays all running EC2 instances across AWS regions using boto3.
+Generated by The Office Engineering Bay.
+Requirement: ${project.requirement}
+"""
+
+import sys
+import os
+import argparse
+import json
+from typing import List, Dict, Any
+
+try:
+    import boto3
+    from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError
+except ImportError:
+    print("[ERROR] boto3 is not installed. Please run: pip install -r requirements.txt")
+    sys.exit(1)
+
+
+def get_all_regions(ec2_client) -> List[str]:
+    """Retrieve list of all active AWS regions for EC2."""
+    try:
+        response = ec2_client.describe_regions(AllRegions=False)
+        return [r['RegionName'] for r in response.get('Regions', [])]
+    except Exception as e:
+        print(f"[WARN] Could not retrieve regions: {e}. Defaulting to us-east-1.")
+        return ['us-east-1']
+
+
+def fetch_running_instances(region: str, session: boto3.Session) -> List[Dict[str, Any]]:
+    """Query EC2 DescribeInstances filtered for instance-state-name == 'running'."""
+    instances_list = []
+    try:
+        ec2 = session.client('ec2', region_name=region)
+        paginator = ec2.get_paginator('describe_instances')
+        page_iterator = paginator.paginate(
+            Filters=[
+                {'Name': 'instance-state-name', 'Values': ['running']}
+            ]
+        )
+
+        for page in page_iterator:
+            for reservation in page.get('Reservations', []):
+                for inst in reservation.get('Instances', []):
+                    name_tag = "-"
+                    for tag in inst.get('Tags', []):
+                        if tag.get('Key') == 'Name':
+                            name_tag = tag.get('Value', '-')
+                            break
+
+                    instances_list.append({
+                        'InstanceId': inst.get('InstanceId'),
+                        'Name': name_tag,
+                        'InstanceType': inst.get('InstanceType'),
+                        'State': inst.get('State', {}).get('Name'),
+                        'Region': region,
+                        'AvailabilityZone': inst.get('Placement', {}).get('AvailabilityZone'),
+                        'PrivateIpAddress': inst.get('PrivateIpAddress', '-'),
+                        'PublicIpAddress': inst.get('PublicIpAddress', '-'),
+                        'LaunchTime': str(inst.get('LaunchTime'))
+                    })
+    except ClientError as e:
+        code = e.response.get('Error', {}).get('Code', '')
+        if code in ('AuthFailure', 'UnauthorizedOperation'):
+            print(f"[WARN] Region {region}: Access denied or region disabled.")
+        else:
+            print(f"[WARN] Region {region} error: {e}")
+    except Exception as e:
+        print(f"[WARN] Failed fetching from {region}: {e}")
+
+    return instances_list
+
+
+def print_table(instances: List[Dict[str, Any]]) -> None:
+    """Render instances in a formatted CLI table."""
+    if not instances:
+        print("\\n[INFO] No running EC2 instances found.")
+        return
+
+    headers = ["Instance ID", "Name", "Type", "Region", "AZ", "Private IP", "Public IP", "State"]
+    widths = [20, 20, 14, 14, 15, 16, 16, 10]
+
+    header_line = " | ".join(h.ljust(widths[i]) for i, h in enumerate(headers))
+    sep_line = "-+-".join("-" * widths[i] for i in range(len(headers)))
+
+    print("\\n" + "=" * len(header_line))
+    print(f"  RUNNING AWS EC2 INSTANCES ({len(instances)} Total)")
+    print("=" * len(header_line))
+    print(header_line)
+    print(sep_line)
+
+    for inst in instances:
+        row = [
+            str(inst.get('InstanceId', '-'))[:widths[0]].ljust(widths[0]),
+            str(inst.get('Name', '-'))[:widths[1]].ljust(widths[1]),
+            str(inst.get('InstanceType', '-'))[:widths[2]].ljust(widths[2]),
+            str(inst.get('Region', '-'))[:widths[3]].ljust(widths[3]),
+            str(inst.get('AvailabilityZone', '-'))[:widths[4]].ljust(widths[4]),
+            str(inst.get('PrivateIpAddress', '-'))[:widths[5]].ljust(widths[5]),
+            str(inst.get('PublicIpAddress', '-'))[:widths[6]].ljust(widths[6]),
+            str(inst.get('State', '-'))[:widths[7]].ljust(widths[7]),
+        ]
+        print(" | ".join(row))
+
+    print(sep_line)
+    print(f"Total: {len(instances)} running instance(s)\\n")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Fetch running EC2 instances from AWS.")
+    parser.add_argument("--region", "-r", help="Specific AWS region (e.g. us-east-1). Default: AWS profile region.")
+    parser.add_argument("--all-regions", "-a", action="store_true", help="Scan across all active AWS regions.")
+    parser.add_argument("--profile", "-p", help="AWS CLI profile name to use.")
+    parser.add_argument("--json", "-j", action="store_true", help="Output results in pure JSON format.")
+    args = parser.parse_args()
+
+    session_kwargs = {}
+    if args.profile:
+        session_kwargs['profile_name'] = args.profile
+    if args.region:
+        session_kwargs['region_name'] = args.region
+
+    try:
+        session = boto3.Session(**session_kwargs)
+        default_region = session.region_name or 'us-east-1'
+    except (NoCredentialsError, PartialCredentialsError):
+        print("[ERROR] AWS credentials not found.")
+        print("Configure credentials via 'aws configure' or export AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY.")
+        sys.exit(1)
+
+    all_instances = []
+    if args.all_regions:
+        default_client = session.client('ec2', region_name=default_region)
+        regions = get_all_regions(default_client)
+        print(f"🔍 Scanning {len(regions)} AWS regions for running instances...")
+        for reg in regions:
+            found = fetch_running_instances(reg, session)
+            if found:
+                print(f"  -> Found {len(found)} in {reg}")
+            all_instances.extend(found)
+    else:
+        target_region = args.region or default_region
+        print(f"🔍 Scanning region '{target_region}' for running instances...")
+        all_instances = fetch_running_instances(target_region, session)
+
+    if args.json:
+        print(json.dumps(all_instances, indent=2))
+    else:
+        print_table(all_instances)
+
+
+if __name__ == "__main__":
+    main()
+=== END FILE ===
+
+=== FILE: requirements.txt ===
+boto3>=1.34.0
+botocore>=1.34.0
+=== END FILE ===
+
+=== FILE: README.md ===
+# AWS EC2 Running Instances Fetcher
+
+Python script to inspect, filter, and display all currently running Amazon EC2 instances.
+
+## Installation
+
+\`\`\`bash
+pip install -r requirements.txt
+\`\`\`
+
+## Authentication
+
+Configure AWS credentials using any standard method:
+\`\`\`bash
+aws configure
+# Or set environment variables:
+export AWS_ACCESS_KEY_ID="YOUR_ACCESS_KEY"
+export AWS_SECRET_ACCESS_KEY="YOUR_SECRET_KEY"
+export AWS_DEFAULT_REGION="us-east-1"
+\`\`\`
+
+## Usage
+
+- Default region:
+  \`\`\`bash
+  python list_ec2_instances.py
+  \`\`\`
+- Specific region:
+  \`\`\`bash
+  python list_ec2_instances.py --region us-west-2
+  \`\`\`
+- Scan all regions:
+  \`\`\`bash
+  python list_ec2_instances.py --all-regions
+  \`\`\`
+- Output JSON:
+  \`\`\`bash
+  python list_ec2_instances.py --json
+  \`\`\`
+=== END FILE ===`;
+      }
+
       return `=== FILE: ${fileName.endsWith('.py') ? fileName : 'main.py'} ===
 #!/usr/bin/env python3
 """
@@ -748,11 +1170,10 @@ def run_task(payload: Dict[str, Any]) -> Dict[str, Any]:
     print(f"[INFO] Initializing task execution for: {payload.get('task_name', 'default')}")
     start_time = time.time()
     
-    # Process items
     results = []
-    items = payload.get("items", ["Alpha", "Beta", "Gamma", "Delta"])
+    items = payload.get("items", ["Task A", "Task B", "Task C"])
     for i, item in enumerate(items, 1):
-        processed = f"{i}. Processed item: {item.upper()}"
+        processed = f"{i}. Processed: {item}"
         results.append(processed)
         print(f"  -> {processed}")
     
@@ -774,14 +1195,29 @@ if __name__ == "__main__":
     sample_input = {
         "task_name": "${title}",
         "environment": "production",
-        "items": ["User Authentication", "Data Pipeline", "Metric Exporter"]
+        "items": ["Execution Item 1", "Execution Item 2", "Execution Item 3"]
     }
     
     output = run_task(sample_input)
-    print("\n--- JSON Output ---")
+    print("\\n--- JSON Output ---")
     print(json.dumps(output, indent=2))
     sys.exit(0)
-`;
+=== END FILE ===
+
+=== FILE: requirements.txt ===
+# Standard library only
+=== END FILE ===
+
+=== FILE: README.md ===
+# ${title}
+
+Executable Python script for: ${project.requirement}
+
+## Usage
+\`\`\`bash
+python ${fileName.endsWith('.py') ? fileName : 'main.py'}
+\`\`\`
+=== END FILE ===`;
     }
 
     if (isFullStackPyodide) {

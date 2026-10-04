@@ -152,7 +152,7 @@ export class OfficeScreen {
     const tasks = getState('tasks') || [];
     const inProgress = tasks.filter(t => t.status === 'in_progress' || t.status === 'in_review');
     const done = tasks.filter(t => t.status === 'done');
-    const company = getState('company') || { name: 'Dunder Mifflin Tech', projectName: 'Current Sprint' };
+    const company = getState('company') || { name: 'The Office', projectName: 'Current Sprint' };
 
     const content = createElement('div');
     content.innerHTML = `

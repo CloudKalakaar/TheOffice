@@ -261,7 +261,7 @@ export class HireScreen {
   async startWorking() {
     const state = getState();
     const company = new Company({
-      name: state.company?.name || 'Dunder Mifflin Tech',
+      name: state.company?.name || 'The Office',
       projectName: state.company?.projectName || 'TaskMaster Pro',
       projectDescription: state.company?.projectDescription || 'Autonomous software development.'
     });

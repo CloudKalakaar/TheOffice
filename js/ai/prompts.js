@@ -111,14 +111,45 @@ Always balance your entertaining in-character personality with genuine, high-qua
 }
 
 /**
+ * Detect what kind of deliverable the boss is asking for.
+ * @param {string} requirement
+ * @returns {'terraform'|'python'|'script'|'fullstack_pyodide'|'web'}
+ */
+export function detectProjectType(requirement = '') {
+  const r = String(requirement).toLowerCase();
+  const has = (...words) => words.some(w => new RegExp(`\\b${w}\\b`).test(r));
+
+  if (has('terraform', 'hcl', 'iac', 'infrastructure as code', 'provision', 'provisioning')) return 'terraform';
+
+  const wantsUI = has('web app', 'webapp', 'website', 'web page', 'webpage', 'frontend', 'front-end', 'ui', 'dashboard', 'html', 'react', 'flask', 'fastapi', 'django', 'backend');
+  const wantsPython = has('python', 'py', 'boto3', 'pandas', 'pip');
+
+  if (wantsPython && wantsUI) return 'fullstack_pyodide';
+  if (wantsPython) return 'python';
+  if (has('bash', 'shell script', 'powershell', 'cli')) return 'script';
+  if (has('script') && !wantsUI) return 'python';
+  return 'web';
+}
+
+export const PROJECT_TYPE_GUIDE = {
+  python: 'A standalone Python 3 script/CLI that the boss will download and run locally (NOT a web app, NOT HTML). Use real libraries appropriate to the task (e.g. boto3 for AWS, requests for HTTP).',
+  terraform: 'Terraform (HCL) infrastructure-as-code files the boss will run with `terraform init/plan/apply` (NOT a web app).',
+  script: 'A standalone shell/CLI script the boss will run locally (NOT a web app).',
+  fullstack_pyodide: 'A web app with Python logic. Deliver an index.html UI that runs the Python code in-browser via Pyodide, plus the Python source file(s).',
+  web: 'A self-contained web application (HTML/CSS/JS) that runs in the browser without a build step.'
+};
+
+/**
  * Prompt: Product Manager questions to the boss
  */
-export function buildQuestionsPrompt(requirement, companyName = 'Dunder Mifflin Tech') {
+export function buildQuestionsPrompt(requirement, companyName = 'The Office', projectType = detectProjectType(requirement)) {
   return [
     {
       role: 'system',
-      content: `You are the Lead Product Manager at ${companyName}. The boss just gave you a requirement to build an application.
+      content: `You are the Lead Product Manager at ${companyName}. The boss just gave you a requirement.
+Deliverable type: ${PROJECT_TYPE_GUIDE[projectType] || PROJECT_TYPE_GUIDE.web}
 Your job is to ask 3 to 4 smart, high-impact clarifying questions before the engineering team starts coding.
+Questions MUST be specific to THIS requirement and deliverable type. For scripts/infra ask about things like authentication, region/scope, filters, output format and error handling — never about visual themes unless a UI is requested.
 For EACH question, provide 3 short, actionable multiple-choice options, plus a recommended default.
 
 CRITICAL: Return ONLY valid JSON in this exact structure with no extra text or markdown backticks:
@@ -145,7 +176,7 @@ CRITICAL: Return ONLY valid JSON in this exact structure with no extra text or m
 /**
  * Prompt: Product Manager spec document
  */
-export function buildSpecPrompt(requirement, answers = {}, companyName = 'Dunder Mifflin Tech') {
+export function buildSpecPrompt(requirement, answers = {}, companyName = 'The Office', projectType = detectProjectType(requirement)) {
   const answersText = Object.entries(answers).length > 0 
     ? Object.entries(answers).map(([q, a]) => `- ${q}: ${a}`).join('\n')
     : "Proceeded with optimal engineering recommendations.";
@@ -154,19 +185,20 @@ export function buildSpecPrompt(requirement, answers = {}, companyName = 'Dunder
     {
       role: 'system',
       content: `You are the Lead Product Manager at ${companyName}.
-Create a concise, production-ready Product Specification Document for a modern, standalone web application.
+Create a concise, production-ready Specification for EXACTLY what the boss asked for. Do not invent a different product.
+Deliverable type: ${PROJECT_TYPE_GUIDE[projectType] || PROJECT_TYPE_GUIDE.web}
 Include:
-1. App Name & One-line Pitch
-2. Core Features (3-5 user-facing features)
-3. User Experience & Flow
-4. Technical Requirements (must run as standalone HTML/CSS/JS without external npm build steps)
+1. Deliverable Name & One-line Summary (restate the boss's goal faithfully)
+2. Core Functionality (3-5 concrete behaviours)
+3. Inputs, Outputs & Usage (how the boss runs/uses it)
+4. Technical Requirements (language, libraries, auth/credentials, runtime)
 5. Acceptance Criteria (bullet points QA can test against)
 
-Keep it clear, concise, and focused on building a delightful, fully functional interactive app.`
+Keep it clear and concise.`
     },
     {
       role: 'user',
-      content: `Project Requirement: "${requirement}"\nClarifications / User Decisions:\n${answersText}\n\nWrite the complete Product Specification.`
+      content: `Project Requirement: "${requirement}"\nClarifications / User Decisions:\n${answersText}\n\nWrite the complete Specification.`
     }
   ];
 }
@@ -174,17 +206,20 @@ Keep it clear, concise, and focused on building a delightful, fully functional i
 /**
  * Prompt: Tech Lead architecture plan
  */
-export function buildPlanPrompt(spec, companyName = 'Dunder Mifflin Tech') {
+export function buildPlanPrompt(spec, companyName = 'The Office', requirement = '', projectType = detectProjectType(requirement)) {
   return [
     {
       role: 'system',
       content: `You are the Principal Systems Architect and Tech Lead at ${companyName}.
-Review the Product Specification and create the Technical Implementation Plan.
-Carefully inspect the requested project type:
-1. PYTHON SCRIPT / UTILITY: If the user asked for a Python script, task automation, or CLI, plan appropriate Python files (e.g. "main.py", "requirements.txt", "README.md").
-2. TERRAFORM / INFRASTRUCTURE: If the user asked for Terraform, cloud provisioning, or DevOps, plan HCL/DevOps files (e.g. "main.tf", "variables.tf", "outputs.tf", "README.md").
-3. WEB APP WITH PYTHON BACKEND: Our platform runs client-side statically. To make Python backend applications work 100% inside our static browser sandbox, build an interactive "index.html" that uses Pyodide (in-browser WebAssembly Python runtime via CDN) or include "app.py" alongside an interactive WebAssembly runner.
-4. WEB APP / FRONTEND: Build as a self-contained "index.html" (or modular "index.html", "style.css", "app.js").
+Review the Specification and create the Technical Implementation Plan.
+The boss's ORIGINAL requirement is the source of truth. Detected deliverable type: "${projectType}" — ${PROJECT_TYPE_GUIDE[projectType] || PROJECT_TYPE_GUIDE.web}
+File conventions per type:
+1. python: "main.py" (or a descriptive name like "list_ec2_instances.py"), "requirements.txt", "README.md". NO index.html.
+2. terraform: "main.tf", "variables.tf", "outputs.tf", "README.md". NO index.html.
+3. script: e.g. "script.sh" or "script.ps1" plus "README.md".
+4. fullstack_pyodide: an interactive "index.html" that runs Python in-browser via Pyodide (CDN), plus "app.py".
+5. web: a self-contained "index.html" (or "index.html", "style.css", "app.js").
+Keep the file list small (1-4 files).
 
 CRITICAL: Return ONLY valid JSON in this exact structure:
 {
@@ -208,7 +243,7 @@ CRITICAL: Return ONLY valid JSON in this exact structure:
     },
     {
       role: 'user',
-      content: `Product Specification:\n${spec}\n\nProduce the technical architecture plan as pure JSON.`
+      content: `Boss's original requirement: "${requirement}"\n\nSpecification:\n${spec}\n\nProduce the technical architecture plan as pure JSON.`
     }
   ];
 }
@@ -216,7 +251,7 @@ CRITICAL: Return ONLY valid JSON in this exact structure:
 /**
  * Prompt: Developer writing a code file
  */
-export function buildCodePrompt(fileName, fileDesc, spec, plan, otherFiles = {}) {
+export function buildCodePrompt(fileName, fileDesc, spec, plan, otherFiles = {}, requirement = '') {
   const existingFilesContext = Object.keys(otherFiles).length > 0
     ? `\nOther files created so far in this project:\n` + Object.entries(otherFiles).map(([f, c]) => `=== FILE: ${f} ===\n${c.substring(0, 500)}...\n`).join('\n')
     : '';
@@ -241,6 +276,10 @@ export function buildCodePrompt(fileName, fileDesc, spec, plan, otherFiles = {})
   } else if (ext === 'sh' || ext === 'bash') {
     specializedGuideline = `You are a Senior Linux DevOps Engineer.
 - Write robust, executable bash scripts with set -euo pipefail, parameter validation, and clear status log messages.`;
+  } else if (ext === 'txt' && fileName.toLowerCase().includes('requirements')) {
+    specializedGuideline = `List ONLY the pip packages the Python code actually imports (one per line, with sensible version pins). No commentary.`;
+  } else if (ext === 'md') {
+    specializedGuideline = `Write a concise README: purpose, prerequisites (credentials, permissions, packages), install steps, exact usage commands with examples, and sample output.`;
   } else {
     specializedGuideline = `Write complete, production-ready, functional code for this file.`;
   }
@@ -250,6 +289,7 @@ export function buildCodePrompt(fileName, fileDesc, spec, plan, otherFiles = {})
       role: 'system',
       content: `You are an expert Senior Software Engineer.
 Your mission is to write COMPLETE, PRODUCTION-READY, FULLY FUNCTIONAL code for "${fileName}".
+The boss's original requirement is the source of truth — the file must directly serve it. Do not build a different or generic program.
 Guidelines:
 - No placeholders, no TODOs, no "implement this later". Everything must work end-to-end.
 ${specializedGuideline}
@@ -260,7 +300,7 @@ followed immediately by the complete file content, and end with:
     },
     {
       role: 'user',
-      content: `Specification:\n${spec}\n\nPlan:\n${typeof plan === 'string' ? plan : JSON.stringify(plan, null, 2)}${existingFilesContext}\n\nWrite the complete code for ${fileName} now.`
+      content: `Boss's original requirement: "${requirement}"\n\nFile to write: ${fileName}${fileDesc ? ` — ${fileDesc}` : ''}\n\nSpecification:\n${spec}\n\nPlan:\n${typeof plan === 'string' ? plan : JSON.stringify(plan, null, 2)}${existingFilesContext}\n\nWrite the complete code for ${fileName} now.`
     }
   ];
 }
@@ -322,6 +362,32 @@ and ending with:
 }
 
 /**
+ * Prompt: Developer applying a boss revision request across the project
+ */
+export function buildChangePrompt(requirement, files, changeDirective) {
+  const filesText = Object.entries(files || {})
+    .map(([name, code]) => `=== FILE: ${name} ===\n${code}\n=== END FILE ===`)
+    .join('\n\n');
+
+  return [
+    {
+      role: 'system',
+      content: `You are the Senior Developer. The boss reviewed the delivered project and requested a revision.
+Apply the requested change completely while preserving all existing working functionality and the original purpose of the project.
+Output ONLY the files you modified or created, each as the COMPLETE file content in this exact format:
+=== FILE: <filename> ===
+<complete file content>
+=== END FILE ===
+Do not output unchanged files. Do not add commentary outside the file blocks.`
+    },
+    {
+      role: 'user',
+      content: `Original requirement: "${requirement}"\n\nCurrent project files:\n${filesText}\n\nBoss's revision request: "${changeDirective}"\n\nApply it now.`
+    }
+  ];
+}
+
+/**
  * Prompt: CEO Delivery Note
  */
 export function buildDeliveryPrompt(requirement, spec, files, qaResult) {
@@ -356,7 +422,7 @@ export function buildBossChatPrompt(employee, context = {}) {
     ? `Active Company Project: "${context.activeProject.name}" (Phase: ${context.activeProject.phase})`
     : "No active company project right now.";
 
-  return `You are ${employee.name}, ${employee.role} at ${context.companyName || 'Dunder Mifflin Tech'}.
+  return `You are ${employee.name}, ${employee.role} at ${context.companyName || 'The Office'}.
 ${roleText}${persText}
 Status: ${employee.status}. Mood: ${employee.mood}/100.
 ${currentTaskText}
@@ -387,6 +453,8 @@ export default {
   buildCodePrompt,
   buildQAPrompt,
   buildFixPrompt,
+  buildChangePrompt,
+  detectProjectType,
   buildDeliveryPrompt,
   buildBossChatPrompt
 };

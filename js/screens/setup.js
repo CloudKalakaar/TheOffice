@@ -100,7 +100,7 @@ export class SetupScreen {
   constructor() {
     this.container = null;
     this.step = getState().setup?.step || 0;
-    this.companyName = 'Dunder Mifflin Tech';
+    this.companyName = 'The Office';
     this.projectName = 'TaskMaster Pro';
     this.projectDesc = 'A modern project management tool for high-performing teams.';
     this.connectedProviders = 0;

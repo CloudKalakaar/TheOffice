@@ -21,7 +21,7 @@ export class EmployeeConversation {
     const state = getState();
     const tasks = state.tasks || [];
     const projects = state.projects || [];
-    const company = state.company || { name: 'Dunder Mifflin Tech' };
+    const company = state.company || { name: 'The Office' };
 
     const currentTask = tasks.find(t => t.id === employee.currentTaskId);
     const activeProject = projects.find(p => p.status === 'in_progress');
